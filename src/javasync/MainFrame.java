@@ -291,7 +291,7 @@ public class MainFrame extends javax.swing.JFrame implements LinkStoreListener {
         for (int i = 0; i < 3; i++) {
             new Thread(new DownloadTask(linkStore, selectedDirectory)).start();
         }
-        jlUrls.remove(jlUrls.getSelectedIndex());
+        
         new Thread(linkStore).start();
         
         
@@ -313,7 +313,8 @@ public class MainFrame extends javax.swing.JFrame implements LinkStoreListener {
             if (jlDownloads.getSelectedIndex() >= 0) {
 
                 try {
-                    new PlayerFrame(jlDownloads.getSelectedValue().getTarget()).setVisible(true);
+                    DownloadTask.Descriptor descriptor = jlDownloads.getSelectedValue();
+                    new PlayerFrame(descriptor).setVisible(true);
                     
                 } catch (JavaLayerException ex) {
                     Logger.getLogger(MainFrame.class.getName()).log(Level.SEVERE, null, ex);
@@ -398,6 +399,9 @@ public class MainFrame extends javax.swing.JFrame implements LinkStoreListener {
     @Override
     public void downloadComplete(DownloadTask.Descriptor task) {
         jProgressBar.setValue(jProgressBar.getValue() + 1);
+        
+        DefaultListModel<String> model = (DefaultListModel<String>) jlUrls.getModel();
+        model.removeElement(task.getSource());
 
         if (--downloads == 0) {
             JOptionPane.showMessageDialog(this, "Download complete!");

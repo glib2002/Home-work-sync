@@ -25,26 +25,30 @@ import javasync.media.PlayerThread;
 import javasync.net.DownloadTask;
 import javazoom.jl.decoder.JavaLayerException;
 import javazoom.jl.player.Player;
+import static jdk.nashorn.internal.objects.NativeRegExp.source;
 
 /**
  *
  * @author CodeFireUA <edu@codefire.com.ua>
  */
 public class PlayerFrame extends javax.swing.JFrame {
-    
+
     private Player player;
-    private String source;
     private PlayerThread playerThread;
-    public String nameComposition = DownloadTask.filename; 
+    private DownloadTask.Descriptor descriptor;
+
     /**
      * Creates new form PlayerFrame
-     * @param source
+     *
+     * @param descriptor
      * @throws javazoom.jl.decoder.JavaLayerException
      */
-    public PlayerFrame(String source) throws JavaLayerException {
-        this.source = source;
-        
+    public PlayerFrame(DownloadTask.Descriptor descriptor) throws JavaLayerException {
+        this.descriptor = descriptor;
+
         initComponents();
+
+        jlMusFilName.setText(descriptor.getFilename());
     }
 
     /**
@@ -58,11 +62,11 @@ public class PlayerFrame extends javax.swing.JFrame {
         jLabel1 = new javax.swing.JLabel();
         jlMusFilName = new javax.swing.JLabel();
         jSlider1 = new javax.swing.JSlider();
-        jButton1 = new javax.swing.JButton();
-        jButton2 = new javax.swing.JButton();
-        jButton3 = new javax.swing.JButton();
-        jButton4 = new javax.swing.JButton();
-        jButton5 = new javax.swing.JButton();
+        jbPlay = new javax.swing.JButton();
+        jbStop = new javax.swing.JButton();
+        jbPrev = new javax.swing.JButton();
+        jbNext = new javax.swing.JButton();
+        jbClose = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
         setResizable(false);
@@ -73,28 +77,28 @@ public class PlayerFrame extends javax.swing.JFrame {
 
         jSlider1.setValue(0);
 
-        jButton1.setText("PLAY");
-        jButton1.addActionListener(new java.awt.event.ActionListener() {
+        jbPlay.setText("PLAY");
+        jbPlay.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton1ActionPerformed(evt);
+                jbPlayActionPerformed(evt);
             }
         });
 
-        jButton2.setText("STOP");
-        jButton2.addActionListener(new java.awt.event.ActionListener() {
+        jbStop.setText("STOP");
+        jbStop.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton2ActionPerformed(evt);
+                jbStopActionPerformed(evt);
             }
         });
 
-        jButton3.setText("Prev");
+        jbPrev.setText("Prev");
 
-        jButton4.setText("Next");
+        jbNext.setText("Next");
 
-        jButton5.setText("Close");
-        jButton5.addActionListener(new java.awt.event.ActionListener() {
+        jbClose.setText("Close");
+        jbClose.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton5ActionPerformed(evt);
+                jbCloseActionPerformed(evt);
             }
         });
 
@@ -114,15 +118,15 @@ public class PlayerFrame extends javax.swing.JFrame {
                         .addComponent(jSlider1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                     .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
                         .addContainerGap()
-                        .addComponent(jButton3)
+                        .addComponent(jbPrev)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jButton4)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 14, Short.MAX_VALUE)
-                        .addComponent(jButton5)
-                        .addGap(18, 18, 18)
-                        .addComponent(jButton2)
+                        .addComponent(jbNext)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jButton1)))
+                        .addComponent(jbClose, javax.swing.GroupLayout.DEFAULT_SIZE, 99, Short.MAX_VALUE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jbStop)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jbPlay)))
                 .addContainerGap())
         );
         layout.setVerticalGroup(
@@ -136,47 +140,52 @@ public class PlayerFrame extends javax.swing.JFrame {
                 .addComponent(jSlider1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jButton1)
-                    .addComponent(jButton2)
-                    .addComponent(jButton3)
-                    .addComponent(jButton4)
-                    .addComponent(jButton5))
+                    .addComponent(jbPlay)
+                    .addComponent(jbStop)
+                    .addComponent(jbPrev)
+                    .addComponent(jbNext)
+                    .addComponent(jbClose))
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
-    private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
-        
+    private void jbPlayActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jbPlayActionPerformed
+
         try {
-            jlMusFilName.setText(nameComposition);
-            player = new Player(new BufferedInputStream(new FileInputStream(source)));
+            player = new Player(new BufferedInputStream(new FileInputStream(descriptor.getTarget())));
             playerThread = new PlayerThread(player);
             new Thread(playerThread).start();
         } catch (JavaLayerException | FileNotFoundException ex) {
             Logger.getLogger(PlayerFrame.class.getName()).log(Level.SEVERE, null, ex);
         }
-        
-    }//GEN-LAST:event_jButton1ActionPerformed
 
-    private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
-        playerThread.stop();
-    }//GEN-LAST:event_jButton2ActionPerformed
+    }//GEN-LAST:event_jbPlayActionPerformed
 
-    private void jButton5ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton5ActionPerformed
-        playerThread.stop();
+    private void jbStopActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jbStopActionPerformed
+        stopPlayer();
+    }//GEN-LAST:event_jbStopActionPerformed
+
+    private void stopPlayer() {
+        if (playerThread != null) {
+            playerThread.stop();
+        }
+    }
+
+    private void jbCloseActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jbCloseActionPerformed
+        stopPlayer();
         dispose();
-    }//GEN-LAST:event_jButton5ActionPerformed
+    }//GEN-LAST:event_jbCloseActionPerformed
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JButton jButton1;
-    private javax.swing.JButton jButton2;
-    private javax.swing.JButton jButton3;
-    private javax.swing.JButton jButton4;
-    private javax.swing.JButton jButton5;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JSlider jSlider1;
+    private javax.swing.JButton jbClose;
+    private javax.swing.JButton jbNext;
+    private javax.swing.JButton jbPlay;
+    private javax.swing.JButton jbPrev;
+    private javax.swing.JButton jbStop;
     private javax.swing.JLabel jlMusFilName;
     // End of variables declaration//GEN-END:variables
 }

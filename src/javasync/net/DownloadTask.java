@@ -39,7 +39,7 @@ public class DownloadTask implements Runnable {
     private String source;
     private String target;
     private Descriptor descriptor;
-    public static String filename;
+    
     public DownloadTask(LinkStore linkStore, File store) {
         this.linkStore = linkStore;
         this.store = store;
@@ -69,12 +69,12 @@ public class DownloadTask implements Runnable {
                     // Get file path on server (decoded)
                     String decodedFile = URLDecoder.decode(new String(url.getFile().getBytes("ISO-8859-1"), "UTF-8"), "UTF-8");
                     // Get file name from file path
-                    filename = new File(decodedFile).getName();
+                    String filename = new File(decodedFile).getName();
 
                     File targetFile = new File(store, filename);
                     target = targetFile.toString();
                     
-                    descriptor = new Descriptor(source, target, total);
+                    descriptor = new Descriptor(source, target, filename, total);
 
                     // PROCESS
                     linkStore.beginDownload(descriptor);
@@ -131,13 +131,19 @@ public class DownloadTask implements Runnable {
 
         private final String source;
         private final String target;
+        private final String filename;
         private final long total;
         private long download;
 
-        public Descriptor(String source, String target, long total) {
+        public Descriptor(String source, String target, String filename, long total) {
             this.source = source;
             this.target = target;
+            this.filename = filename;
             this.total = total;
+        }
+
+        public String getFilename() {
+            return filename;
         }
 
         public String getSource() {
