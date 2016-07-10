@@ -24,6 +24,8 @@ import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javasync.media.PlayerThread;
@@ -40,9 +42,14 @@ import javazoom.spi.mpeg.sampled.file.MpegAudioFileReader;
  */
 public final class PlayerFrame extends javax.swing.JFrame {
 
+    private static final SimpleDateFormat sdf = new SimpleDateFormat("mm:ss");
+
     private Player player;
     private PlayerThread playerThread;
     private DownloadTask.Descriptor descriptor;
+    private Timer timer;
+
+    private long totalMillis;
 
     /**
      * Creates new form PlayerFrame
@@ -52,6 +59,8 @@ public final class PlayerFrame extends javax.swing.JFrame {
      */
     public PlayerFrame(DownloadTask.Descriptor descriptor) throws JavaLayerException {
         this.descriptor = descriptor;
+
+        this.timer = new Timer();
 
         initComponents();
 
@@ -77,10 +86,10 @@ public final class PlayerFrame extends javax.swing.JFrame {
 
             int framesize = (int) props.get("mp3.framesize.bytes");
             long duration = (long) props.get("duration");
+            totalMillis = duration / framesize;
 
-            SimpleDateFormat sdf = new SimpleDateFormat("mm:ss");
-            jlTotalLength.setText(sdf.format(new Date(duration / framesize)));
-
+            jlTotalLength.setText(sdf.format(new Date(totalMillis)));
+            jSlider1.setMaximum((int) totalMillis);
         } catch (UnsupportedAudioFileException | IOException ex) {
             Logger.getLogger(PlayerFrame.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -107,12 +116,24 @@ public final class PlayerFrame extends javax.swing.JFrame {
 
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
         setResizable(false);
+        addWindowListener(new java.awt.event.WindowAdapter() {
+            public void windowClosing(java.awt.event.WindowEvent evt) {
+                formWindowClosing(evt);
+            }
+        });
 
         jLabel1.setText("File:");
 
         jlMusFilName.setText("Music file name");
 
+        jSlider1.setMajorTickSpacing(60000);
+        jSlider1.setPaintTicks(true);
         jSlider1.setValue(0);
+        jSlider1.addChangeListener(new javax.swing.event.ChangeListener() {
+            public void stateChanged(javax.swing.event.ChangeEvent evt) {
+                jSlider1StateChanged(evt);
+            }
+        });
 
         jbPlay.setText("PLAY");
         jbPlay.addActionListener(new java.awt.event.ActionListener() {
@@ -213,16 +234,39 @@ public final class PlayerFrame extends javax.swing.JFrame {
 
     private void jbPlayActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jbPlayActionPerformed
 
+        int skip = 0;
+        
         try {
-            player = new Player(new BufferedInputStream(new FileInputStream(descriptor.getTarget())));
-            playerThread = new PlayerThread(player);
+            playback(skip);
 
-            new Thread(playerThread).start();
+            timer.scheduleAtFixedRate(new TimerTask() {
+                @Override
+                public void run() {
+                    int current_millis = player.getPosition();
+                    jlCurrentPosition.setText(sdf.format(new Date(current_millis)));
+                    jSlider1.getModel().setValue(current_millis);
+                }
+            }, 0, 1000);
         } catch (JavaLayerException | FileNotFoundException ex) {
+            Logger.getLogger(PlayerFrame.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (IOException ex) {
             Logger.getLogger(PlayerFrame.class.getName()).log(Level.SEVERE, null, ex);
         }
 
     }//GEN-LAST:event_jbPlayActionPerformed
+
+    private void playback(int skip) throws FileNotFoundException, JavaLayerException, IOException {
+        if (playerThread != null) {
+            playerThread.stop();
+        }
+        
+        BufferedInputStream bufferedInputStream = new BufferedInputStream(new FileInputStream(descriptor.getTarget()));
+        bufferedInputStream.skip(skip);
+        player = new Player(bufferedInputStream);
+        playerThread = new PlayerThread(player);
+        
+        new Thread(playerThread).start();
+    }
 
     private void jbStopActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jbStopActionPerformed
         stopPlayer();
@@ -246,6 +290,16 @@ public final class PlayerFrame extends javax.swing.JFrame {
     private void jbPrevActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jbPrevActionPerformed
         // TODO add your handling code here:
     }//GEN-LAST:event_jbPrevActionPerformed
+
+    private void formWindowClosing(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowClosing
+        stopPlayer();
+    }//GEN-LAST:event_formWindowClosing
+
+    private void jSlider1StateChanged(javax.swing.event.ChangeEvent evt) {//GEN-FIRST:event_jSlider1StateChanged
+
+        
+
+    }//GEN-LAST:event_jSlider1StateChanged
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JLabel jLabel1;
