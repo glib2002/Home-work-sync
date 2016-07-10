@@ -168,7 +168,7 @@ public class DownloadTask implements Runnable {
 
         @Override
         public String toString() {
-            return String.format("[ %3d%% ] %s", download * 100 / total, target);
+            return String.format("[ %3d%% ] %s", download * 100 / total, filename);
         }
     }
 }

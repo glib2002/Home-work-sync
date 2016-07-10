@@ -121,7 +121,7 @@ public class MainFrame extends javax.swing.JFrame implements LinkStoreListener {
 
         jLabel1.setText("File list:");
 
-        jtfAddress.setText("http://www.ex.ua/playlist/2301371.m3u");
+        jtfAddress.setText("http://www.ex.ua/playlist/75597975.m3u");
         jtfAddress.addKeyListener(new java.awt.event.KeyAdapter() {
             public void keyTyped(java.awt.event.KeyEvent evt) {
                 jtfAddressKeyTyped(evt);

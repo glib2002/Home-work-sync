@@ -17,21 +17,28 @@
 package javasync;
 
 import java.io.BufferedInputStream;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javasync.media.PlayerThread;
 import javasync.net.DownloadTask;
+import javax.sound.sampled.AudioFileFormat;
+import javax.sound.sampled.UnsupportedAudioFileException;
 import javazoom.jl.decoder.JavaLayerException;
 import javazoom.jl.player.Player;
-import static jdk.nashorn.internal.objects.NativeRegExp.source;
+import javazoom.spi.mpeg.sampled.file.MpegAudioFileReader;
 
 /**
  *
  * @author CodeFireUA <edu@codefire.com.ua>
  */
-public class PlayerFrame extends javax.swing.JFrame {
+public final class PlayerFrame extends javax.swing.JFrame {
 
     private Player player;
     private PlayerThread playerThread;
@@ -48,7 +55,35 @@ public class PlayerFrame extends javax.swing.JFrame {
 
         initComponents();
 
-        jlMusFilName.setText(descriptor.getFilename());
+        prepareFileInformation();
+
+    }
+
+    public void prepareFileInformation() {
+        File musicFile = new File(descriptor.getTarget());
+
+        try {
+            AudioFileFormat aff = new MpegAudioFileReader().getAudioFileFormat(musicFile);
+            System.out.println("Frame: " + aff.getFrameLength());
+            System.out.println("TYPE: " + aff.getType());
+
+            Map<String, Object> props = aff.properties();
+
+            for (Map.Entry<String, Object> entry : props.entrySet()) {
+                System.out.println(entry);
+            }
+
+            jlMusFilName.setText(String.format("%s :: %s - %s", props.get("author"), props.get("album"), props.get("title")));
+
+            int framesize = (int) props.get("mp3.framesize.bytes");
+            long duration = (long) props.get("duration");
+
+            SimpleDateFormat sdf = new SimpleDateFormat("mm:ss");
+            jlTotalLength.setText(sdf.format(new Date(duration / framesize)));
+
+        } catch (UnsupportedAudioFileException | IOException ex) {
+            Logger.getLogger(PlayerFrame.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
 
     /**
@@ -67,6 +102,8 @@ public class PlayerFrame extends javax.swing.JFrame {
         jbPrev = new javax.swing.JButton();
         jbNext = new javax.swing.JButton();
         jbClose = new javax.swing.JButton();
+        jlTotalLength = new javax.swing.JLabel();
+        jlCurrentPosition = new javax.swing.JLabel();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
         setResizable(false);
@@ -92,15 +129,29 @@ public class PlayerFrame extends javax.swing.JFrame {
         });
 
         jbPrev.setText("Prev");
+        jbPrev.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jbPrevActionPerformed(evt);
+            }
+        });
 
         jbNext.setText("Next");
+        jbNext.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jbNextActionPerformed(evt);
+            }
+        });
 
-        jbClose.setText("Close");
+        jbClose.setText("X");
         jbClose.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jbCloseActionPerformed(evt);
             }
         });
+
+        jlTotalLength.setText("00:00");
+
+        jlCurrentPosition.setText("00:00");
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
@@ -115,18 +166,24 @@ public class PlayerFrame extends javax.swing.JFrame {
                         .addComponent(jlMusFilName, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                     .addGroup(layout.createSequentialGroup()
                         .addContainerGap()
-                        .addComponent(jSlider1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
-                        .addContainerGap()
-                        .addComponent(jbPrev)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jbNext)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jbClose, javax.swing.GroupLayout.DEFAULT_SIZE, 99, Short.MAX_VALUE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jbStop)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jbPlay)))
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(layout.createSequentialGroup()
+                                .addComponent(jbPrev)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(jbNext)
+                                .addGap(18, 18, 18)
+                                .addComponent(jbClose, javax.swing.GroupLayout.PREFERRED_SIZE, 108, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addGap(18, 18, 18)
+                                .addComponent(jbStop)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(jbPlay)
+                                .addGap(0, 0, Short.MAX_VALUE))
+                            .addGroup(layout.createSequentialGroup()
+                                .addComponent(jlCurrentPosition)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(jSlider1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(jlTotalLength)))))
                 .addContainerGap())
         );
         layout.setVerticalGroup(
@@ -136,16 +193,19 @@ public class PlayerFrame extends javax.swing.JFrame {
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel1)
                     .addComponent(jlMusFilName))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jSlider1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGap(18, 18, 18)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                    .addComponent(jSlider1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(jlTotalLength, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(jlCurrentPosition, javax.swing.GroupLayout.PREFERRED_SIZE, 29, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jbPlay)
                     .addComponent(jbStop)
                     .addComponent(jbPrev)
                     .addComponent(jbNext)
                     .addComponent(jbClose))
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addContainerGap())
         );
 
         pack();
@@ -156,6 +216,7 @@ public class PlayerFrame extends javax.swing.JFrame {
         try {
             player = new Player(new BufferedInputStream(new FileInputStream(descriptor.getTarget())));
             playerThread = new PlayerThread(player);
+
             new Thread(playerThread).start();
         } catch (JavaLayerException | FileNotFoundException ex) {
             Logger.getLogger(PlayerFrame.class.getName()).log(Level.SEVERE, null, ex);
@@ -178,6 +239,14 @@ public class PlayerFrame extends javax.swing.JFrame {
         dispose();
     }//GEN-LAST:event_jbCloseActionPerformed
 
+    private void jbNextActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jbNextActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_jbNextActionPerformed
+
+    private void jbPrevActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jbPrevActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_jbPrevActionPerformed
+
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JLabel jLabel1;
     private javax.swing.JSlider jSlider1;
@@ -186,6 +255,8 @@ public class PlayerFrame extends javax.swing.JFrame {
     private javax.swing.JButton jbPlay;
     private javax.swing.JButton jbPrev;
     private javax.swing.JButton jbStop;
+    private javax.swing.JLabel jlCurrentPosition;
     private javax.swing.JLabel jlMusFilName;
+    private javax.swing.JLabel jlTotalLength;
     // End of variables declaration//GEN-END:variables
 }

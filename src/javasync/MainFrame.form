@@ -149,7 +149,7 @@
     </Component>
     <Component class="javax.swing.JTextField" name="jtfAddress">
       <Properties>
-        <Property name="text" type="java.lang.String" value="http://www.ex.ua/playlist/2301371.m3u"/>
+        <Property name="text" type="java.lang.String" value="http://www.ex.ua/playlist/75597975.m3u"/>
       </Properties>
       <Events>
         <EventHandler event="keyTyped" listener="java.awt.event.KeyListener" parameters="java.awt.event.KeyEvent" handler="jtfAddressKeyTyped"/>
